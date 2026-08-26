@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <title>Mecanum Control</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        h2 {
+            margin: 20px 0 10px;
+        }
+
+        #status {
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            width: 100%;
+            flex: 1;
+
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+
+            padding: 20px;
+        }
+
+        .joystick-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .joystick {
+            width: 180px;
+            height: 180px;
+
+            border: 3px solid #777;
+            border-radius: 50%;
+
+            position: relative;
+
+            background: #222;
+            touch-action: none;
+        }
+
+        .knob {
+            width: 70px;
+            height: 70px;
+
+            background: #eee;
+            border-radius: 50%;
+
+            position: absolute;
+
+            left: 50%;
+            top: 50%;
+
+            transform: translate(-50%, -50%);
+
+            pointer-events: none;
+        }
+
+        .label {
+            color: #aaa;
+        }
+
+        @media (max-width: 500px) {
+            .joystick {
+                width: 140px;
+                height: 140px;
+            }
+
+            .knob {
+                width: 55px;
+                height: 55px;
+            }
+
+            .controls {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Mecanum Control</h2>
+
+<div id="status">
+    vx: 0.00 | vy: 0.00 | ω: 0.00
+</div>
+
+<div class="controls">
+
+    <div class="joystick-container">
+        <div id="leftJoystick" class="joystick">
+            <div class="knob"></div>
+        </div>
+
+        <div class="label">Movement</div>
+    </div>
+
+    <div class="joystick-container">
+        <div id="rightJoystick" class="joystick">
+            <div class="knob"></div>
+        </div>
+
+        <div class="label">Rotation</div>
+    </div>
+
+</div>
+
+<script>
+    let vx = 0;
+    let vy = 0;
+    let omega = 0;
+
+    const status = document.getElementById("status");
+
+    function clamp(x, min, max) {
+        return Math.max(min, Math.min(max, x));
+    }
+
+    function updateStatus() {
+        status.textContent =
+            `vx: ${vx.toFixed(2)} | ` +
+            `vy: ${vy.toFixed(2)} | ` +
+            `ω: ${omega.toFixed(2)}`;
+    }
+
+
+    // ---------------- LEFT JOYSTICK ----------------
+
+    const left = document.getElementById("leftJoystick");
+    const leftKnob = left.querySelector(".knob");
+
+    function moveLeft(event) {
+
+        const rect = left.getBoundingClientRect();
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        let dx = event.clientX - rect.left - centerX;
+        let dy = event.clientY - rect.top - centerY;
+
+        const radius = rect.width / 2;
+
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > radius) {
+            dx = dx / distance * radius;
+            dy = dy / distance * radius;
+        }
+
+        leftKnob.style.transform =
+            `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+        vx = clamp(dx / radius, -1, 1);
+
+        // Bildschirm nach oben = positive Vorwärtsrichtung
+        vy = clamp(-dy / radius, -1, 1);
+
+        updateStatus();
+    }
+
+    function resetLeft() {
+        vx = 0;
+        vy = 0;
+
+        leftKnob.style.transform =
+            "translate(-50%, -50%)";
+
+        updateStatus();
+    }
+
+    left.addEventListener("pointerdown", event => {
+        left.setPointerCapture(event.pointerId);
+        moveLeft(event);
+    });
+
+    left.addEventListener("pointermove", event => {
+        if (event.buttons)
+            moveLeft(event);
+    });
+
+    left.addEventListener("pointerup", resetLeft);
+    left.addEventListener("pointercancel", resetLeft);
+
+
+    // ---------------- RIGHT JOYSTICK ----------------
+
+    const right = document.getElementById("rightJoystick");
+    const rightKnob = right.querySelector(".knob");
+
+    function moveRight(event) {
+
+        const rect = right.getBoundingClientRect();
+
+        const centerX = rect.width / 2;
+
+        let dx = event.clientX - rect.left - centerX;
+
+        const radius = rect.width / 2;
+
+        dx = clamp(dx, -radius, radius);
+
+        rightKnob.style.transform =
+            `translate(calc(-50% + ${dx}px), -50%)`;
+
+        omega = clamp(dx / radius, -1, 1);
+
+        updateStatus();
+    }
+
+    function resetRight() {
+        omega = 0;
+
+        rightKnob.style.transform =
+            "translate(-50%, -50%)";
+
+        updateStatus();
+    }
+
+    right.addEventListener("pointerdown", event => {
+        right.setPointerCapture(event.pointerId);
+        moveRight(event);
+    });
+
+    right.addEventListener("pointermove", event => {
+        if (event.buttons)
+            moveRight(event);
+    });
+
+    right.addEventListener("pointerup", resetRight);
+    right.addEventListener("pointercancel", resetRight);
+
+
+    // ---------------- SEND TO ESP32 ----------------
+
+    function sendControl() {
+
+        const url =
+            `/drive?vx=${vx.toFixed(3)}` +
+            `&vy=${vy.toFixed(3)}` +
+            `&omega=${omega.toFixed(3)}`;
+
+        fetch(url, {
+            cache: "no-store"
+        }).catch(() => {});
+    }
+
+    // 20 updates / second
+    setInterval(sendControl, 50);
+
+
+    // Stop when page disappears
+    window.addEventListener("pagehide", () => {
+        vx = 0;
+        vy = 0;
+        omega = 0;
+
+        fetch("/drive?vx=0&vy=0&omega=0", {
+            keepalive: true
+        }).catch(() => {});
+    });
+
+</script>
+
+</body>
+</html>
