@@ -138,7 +138,7 @@ void set_motor(Motor motor, float speed) {
         gpio_set_level(motor.in2, 0);
     }
 
-    uint32_t duty = (uint32_t)(fabsf(speed) * 255);
+    uint32_t duty = (uint32_t)(fabsf(speed) * 100);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, motor.channel, duty);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, motor.channel);
 

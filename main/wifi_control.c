@@ -1,4 +1,5 @@
 #include "wifi_control.h"
+#include "esp_wifi_types_generic.h"
 #include "motor.h"
 #include "safety.h"
 
@@ -11,9 +12,15 @@
 #include "esp_http_server.h"
 #include "esp_netif.h"
 
+static bool wifi_initialized = false;
+static httpd_handle_t server = NULL;
+
 //WIFI-INIT----------------------------------------
 void wifi_init(void)
 {
+
+    if (wifi_initialized) return;
+
     // NVS
     nvs_flash_init();
 
@@ -43,7 +50,34 @@ void wifi_init(void)
 
     esp_wifi_set_mode(WIFI_MODE_AP);
     esp_wifi_set_config(WIFI_IF_AP, &wifi_config);
+
+    wifi_initialized = true;
+}
+
+//WIFI-START
+void wifi_start(void) {
+
+    if (!wifi_initialized) {
+        wifi_init();
+    }
+
+    esp_wifi_set_mode(WIFI_MODE_AP);
     esp_wifi_start();
+
+    if (server == NULL) {
+        server = start_webserver();
+    }
+}
+
+
+//WIFI-STOP
+void wifi_stop(void) {
+    if (server != NULL) {
+        httpd_stop(server);
+        server = NULL;
+    }
+
+    esp_wifi_stop();
 }
 
 //CONTROLLER-HTML/Handler
