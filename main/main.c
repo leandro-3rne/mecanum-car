@@ -3,14 +3,21 @@
 #include "soc/gpio_num.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
+#include "esp_err.h"
 
 #include "motor.h"
 #include "wifi_control.h"
 #include "safety.h"
 #include "remote_control.h"
+#include "i2c_oled.h"
+#include "line_follow.h"
 
 //BUTTON (BOOT ESP32)
 #define BUTTON GPIO_NUM_0
+
+static const char *TAG = "MAIN";
+
 
 void app_main(void)
 {
@@ -21,8 +28,12 @@ void app_main(void)
     //Erster Modus (WIFI)
     wifi_init();
     wifi_start();
+    //Dritter Modus (IR)
+    ESP_ERROR_CHECK(line_follow_init());
 
-    uint8_t mac[6];
+    screen_init();
+    screen_start();
+    screen_set_mode(mode_get());
 
     //Dircetion/Mode BUTTON
     gpio_set_direction(BUTTON, GPIO_MODE_INPUT);
@@ -52,7 +63,7 @@ void app_main(void)
                     break;
 
                 case MODE_LINE_FOLLOW:
-                    //line_follow_stop();
+                    line_follow_stop();
                     break;
             }
             
@@ -67,13 +78,15 @@ void app_main(void)
                     break;
 
                 case MODE_LINE_FOLLOW:
-                    // line_follow_start();
+                    line_follow_start();
                     break;
             }
+
+            screen_set_mode(mode);
         }
 
         last_button = button;
 
-        vTaskDelay(pdMS_TO_TICKS(20));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }

@@ -9,7 +9,7 @@
 
 // PINs ----------------------------------------------
 // Front
-#define FRIN1 GPIO_NUM_32 // Front-Right-IN1
+#define FRIN1 GPIO_NUM_13 // Front-Right-IN1
 #define FRIN2 GPIO_NUM_33 // Front-Right-IN2
 
 #define FLIN1 GPIO_NUM_25 // Front-Left-IN1
