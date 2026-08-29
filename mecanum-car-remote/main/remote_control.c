@@ -1,22 +1,24 @@
+#include "remote_control.h"
+
 #include <stdio.h>
 #include <string.h>
 
-#include "esp_check.h"
+#include "esp_wifi.h"
 #include "esp_event.h"
+#include "nvs_flash.h"
 #include "esp_netif.h"
 #include "esp_now.h"
-#include "esp_wifi.h"
-#include "esp_wifi_types_generic.h"
-#include "nvs_flash.h"
+#include "esp_err.h"
 
-#include "remote_control.h"
 
-//WIFI-MAC-ADRESSE
+//MAC-ADRESSE ---------------------------------------
 static const uint8_t mecanum_mac[6] = {
     0xB4, 0xBF, 0xE9,
     0xC8, 0x70, 0x48
 };
 
+
+//WIFI-INIT
 void wifi_init(void)
 {
     nvs_flash_init();
@@ -33,6 +35,8 @@ void wifi_init(void)
     esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
 }
 
+
+//SEND-CALLBACK
 static void send_callback(
     const wifi_tx_info_t *tx_info,
     esp_now_send_status_t status
@@ -44,6 +48,8 @@ static void send_callback(
     );
 }
 
+
+//ESP-NOW-INIT
 void espnow_init(void)
 {
     esp_now_init();
@@ -59,6 +65,8 @@ void espnow_init(void)
     esp_now_register_send_cb(send_callback);
 }
 
+
+//REMOTE-CONTROL-SEND
 void remote_control_send(const RemoteCommand *command)
 {
     esp_now_send(mecanum_mac, (const uint8_t *)command, sizeof(*command));

@@ -1,11 +1,13 @@
+#include "remote_control.h"
+#include "joysticks.h"
+
 #include <stdio.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "remote_control.h"
-#include "joysticks.h"
 
+//APP-MAIN
 void app_main(void)
 {
     wifi_init();
@@ -15,7 +17,7 @@ void app_main(void)
     while (1) {
 
         RemoteCommand command = joysticks_read();
-        
+
         remote_control_send(&command);
 
         printf("sent\n");

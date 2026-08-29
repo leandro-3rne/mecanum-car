@@ -4,7 +4,6 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 #include "driver/i2c_master.h"
 #include "esp_log.h"
 
@@ -30,10 +29,7 @@ static i2c_master_dev_handle_t screen_handle = NULL;
 static uint8_t screen_buffer[SCREEN_WIDTH * SCREEN_PAGES];
 
 
-// =====================================================
-// 5x7 FONT
-// =====================================================
-
+//FONT ----------------------------------------------
 static const uint8_t FONT_SPACE[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
 
 static const uint8_t FONT_A[5] = {0x7E, 0x11, 0x11, 0x11, 0x7E};
@@ -51,10 +47,7 @@ static const uint8_t FONT_D[5] = {0x7F, 0x41, 0x41, 0x22, 0x1C};
 static const uint8_t FONT_HYPHEN[5] = {0x08, 0x08, 0x08, 0x08, 0x08};
 
 
-// =====================================================
-// LOW LEVEL
-// =====================================================
-
+//LOW-LEVEL
 static esp_err_t screen_write_command(uint8_t command)
 {
     uint8_t data[2] = {
@@ -91,10 +84,7 @@ static esp_err_t screen_write_data(const uint8_t *data, size_t length)
 }
 
 
-// =====================================================
-// CURSOR
-// =====================================================
-
+//CURSOR
 static esp_err_t screen_set_cursor(uint8_t x, uint8_t page)
 {
     esp_err_t err;
@@ -120,14 +110,10 @@ static esp_err_t screen_set_cursor(uint8_t x, uint8_t page)
 }
 
 
-// =====================================================
-// FONT LOOKUP
-// =====================================================
-
+//FONT-LOOKUP
 static const uint8_t *screen_get_char(char c)
 {
-    switch (c)
-    {
+    switch (c) {
         case 'A': return FONT_A;
         case 'D': return FONT_D;
         case 'E': return FONT_E;
@@ -149,10 +135,7 @@ static const uint8_t *screen_get_char(char c)
 }
 
 
-// =====================================================
-// FRAMEBUFFER
-// =====================================================
-
+//FRAMEBUFFER
 static void screen_buffer_clear(void)
 {
     memset(screen_buffer, 0, sizeof(screen_buffer));
@@ -197,10 +180,7 @@ static esp_err_t screen_buffer_flush(void)
 }
 
 
-// =====================================================
-// DRAW CHAR
-// =====================================================
-
+//DRAW-CHAR
 static void screen_buffer_draw_char(uint8_t x, uint8_t y, char c)
 {
     const uint8_t *font = screen_get_char(c);
@@ -227,10 +207,7 @@ static void screen_buffer_draw_char(uint8_t x, uint8_t y, char c)
 }
 
 
-// =====================================================
-// DRAW TEXT
-// =====================================================
-
+//DRAW-TEXT
 static void screen_buffer_draw_text(uint8_t x, uint8_t y, const char *text)
 {
     uint8_t cursor = x;
@@ -243,10 +220,7 @@ static void screen_buffer_draw_text(uint8_t x, uint8_t y, const char *text)
 }
 
 
-// =====================================================
-// INIT
-// =====================================================
-
+//SCREEN-INIT
 esp_err_t screen_init(void)
 {
     if (bus_handle != NULL) {
@@ -270,7 +244,6 @@ esp_err_t screen_init(void)
     if (err != ESP_OK) {
         return err;
     }
-
 
     i2c_device_config_t device_config = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
@@ -298,10 +271,7 @@ esp_err_t screen_init(void)
 }
 
 
-// =====================================================
-// START
-// =====================================================
-
+//SCREEN-START
 esp_err_t screen_start(void)
 {
     if (screen_handle == NULL) {
@@ -311,46 +281,26 @@ esp_err_t screen_start(void)
     vTaskDelay(pdMS_TO_TICKS(100));
 
     const uint8_t init_commands[] = {
-
         0xAE,
-
         0xD5, 0x80,
-
         0xA8, 0x3F,
-
         0xD3, 0x00,
-
         0x40,
-
         0x8D, 0x14,
-
         0x20, 0x00,
-
         0xA1,
-
         0xC8,
-
         0xDA, 0x12,
-
         0x81, 0xCF,
-
         0xD9, 0xF1,
-
         0xDB, 0x40,
-
         0xA4,
-
         0xA6,
-
         0xAF
     };
 
-    for (size_t i = 0;
-         i < sizeof(init_commands);
-         i++)
-    {
-        esp_err_t err =
-            screen_write_command(init_commands[i]);
+    for (size_t i = 0; i < sizeof(init_commands); i++) {
+        esp_err_t err = screen_write_command(init_commands[i]);
 
         if (err != ESP_OK) {
             return err;
@@ -363,10 +313,7 @@ esp_err_t screen_start(void)
 }
 
 
-// =====================================================
-// CLEAR
-// =====================================================
-
+//SCREEN-CLEAR
 esp_err_t screen_clear(void)
 {
     if (screen_handle == NULL) {
@@ -378,10 +325,7 @@ esp_err_t screen_clear(void)
 }
 
 
-// =====================================================
-// MODE DISPLAY
-// =====================================================
-
+//SCREEN-SET-MODE
 esp_err_t screen_set_mode(ControlMode mode)
 {
     if (screen_handle == NULL) {
@@ -396,8 +340,7 @@ esp_err_t screen_set_mode(ControlMode mode)
 
     const char *text;
 
-    switch (mode)
-    {
+    switch (mode) {
         case MODE_WIFI:
             text = "WIFI";
             break;
@@ -415,8 +358,7 @@ esp_err_t screen_set_mode(ControlMode mode)
             break;
     }
 
-
-    // ungefähr vertikal mittig
+    //Vertikal mittig
     uint8_t text_width = (uint8_t)(strlen(text) * FONT_CHAR_WIDTH);
     uint8_t x = (SCREEN_WIDTH - text_width) / 2;
     uint8_t y = (SCREEN_HEIGHT - FONT_CHAR_HEIGHT) / 2;
@@ -427,10 +369,7 @@ esp_err_t screen_set_mode(ControlMode mode)
 }
 
 
-// =====================================================
-// STOP
-// =====================================================
-
+//SCREEN-STOP
 esp_err_t screen_stop(void)
 {
     if (screen_handle == NULL) {
@@ -439,10 +378,7 @@ esp_err_t screen_stop(void)
 
     screen_write_command(0xAE);
 
-    esp_err_t err =
-        i2c_master_bus_rm_device(
-            screen_handle
-        );
+    esp_err_t err = i2c_master_bus_rm_device(screen_handle);
 
     if (err != ESP_OK) {
         return err;
@@ -450,10 +386,7 @@ esp_err_t screen_stop(void)
 
     screen_handle = NULL;
 
-
-    err = i2c_del_master_bus(
-        bus_handle
-    );
+    err = i2c_del_master_bus(bus_handle);
 
     if (err != ESP_OK) {
         return err;

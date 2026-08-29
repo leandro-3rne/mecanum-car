@@ -1,43 +1,44 @@
 #include "wifi_control.h"
-#include "esp_wifi_types_generic.h"
-#include "motor.h"
-#include "safety.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "nvs_flash.h"
 #include "esp_http_server.h"
 #include "esp_netif.h"
 
+#include "motor.h"
+#include "safety.h"
+
 static bool wifi_initialized = false;
 static httpd_handle_t server = NULL;
 
-//WIFI-INIT----------------------------------------
+
+//WIFI-INIT
 void wifi_init(void)
 {
-
     if (wifi_initialized) return;
 
-    // NVS
+    //NVS
     nvs_flash_init();
 
-    // Netzwerk-Stack
+    //Netzwerk-Stack
     esp_netif_init();
 
-    // Event-System
+    //Event-System
     esp_event_loop_create_default();
 
-    // Access-Point Netzwerkinterface
+    //Access-Point Netzwerkinterface
     esp_netif_create_default_wifi_ap();
 
-    // WiFi-Treiber initialisieren
+    //WiFi-Treiber initialisieren
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_wifi_init(&cfg);
 
-    // Access Point konfigurieren
+    //Access Point konfigurieren
     wifi_config_t wifi_config = {
         .ap = {
             .ssid = "Mecanum-Car",
@@ -53,6 +54,7 @@ void wifi_init(void)
 
     wifi_initialized = true;
 }
+
 
 //WIFI-START
 void wifi_start(void) {
@@ -80,7 +82,8 @@ void wifi_stop(void) {
     esp_wifi_stop();
 }
 
-//CONTROLLER-HTML/Handler
+
+//CONTROLLER-HTML
 extern const unsigned char controller_html_start[]
     asm("_binary_controller_html_start");
 
@@ -88,6 +91,7 @@ extern const unsigned char controller_html_end[]
     asm("_binary_controller_html_end");
 
 
+//CONTROLLER-HANDLER
 esp_err_t controller_handler(httpd_req_t *req)
 {
     size_t size =
@@ -105,7 +109,7 @@ esp_err_t controller_handler(httpd_req_t *req)
 }
 
 
-//HANDY-REMOTE-SETUP-------------------------------
+//DRIVE-HANDLER
 esp_err_t drive_handler(httpd_req_t *req)
 {
     char query[100];
@@ -129,17 +133,19 @@ esp_err_t drive_handler(httpd_req_t *req)
 
     printf("vx=%f, vy=%f, omega=%f\n", vx, vy, omega);
 
-    // Safety Trick
+    //Safety
     safety_command_received();
     motor_standby(true);
 
-    // Auto ansteuern
+    //Auto ansteuern
     drive(vx, vy, omega);
 
     httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
+
+//WEBSERVER-START
 httpd_handle_t start_webserver(void)
 {
     httpd_handle_t server = NULL;

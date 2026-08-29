@@ -6,11 +6,10 @@
 #include <stdbool.h>
 
 
-
-// STBY
+//STBY
 #define STBY GPIO_NUM_4
 
-// STRUCT-MOTORS--------------------------------------
+//STRUCT-MOTORS
 typedef struct {
     gpio_num_t in1;
     gpio_num_t in2;

@@ -1,33 +1,33 @@
-#include "driver/gpio.h"
-#include "mode.h"
-#include "soc/gpio_num.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-#include "esp_err.h"
-
 #include "motor.h"
 #include "wifi_control.h"
 #include "safety.h"
 #include "remote_control.h"
 #include "i2c_oled.h"
 #include "line_follow.h"
+#include "mode.h"
+
+#include "driver/gpio.h"
+#include "soc/gpio_num.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_err.h"
 
 //BUTTON (BOOT ESP32)
 #define BUTTON GPIO_NUM_0
 
-static const char *TAG = "MAIN";
 
-
+//APP-MAIN
 void app_main(void)
 {
     //Inits
     motor_init();
     safety_init();
     mode_init();
+
     //Erster Modus (WIFI)
     wifi_init();
     wifi_start();
+
     //Dritter Modus (IR)
     ESP_ERROR_CHECK(line_follow_init());
 
@@ -35,7 +35,7 @@ void app_main(void)
     screen_start();
     screen_set_mode(mode_get());
 
-    //Dircetion/Mode BUTTON
+    //Mode-Button
     gpio_set_direction(BUTTON, GPIO_MODE_INPUT);
     gpio_set_pull_mode(BUTTON, GPIO_PULLUP_ONLY);
 
@@ -44,7 +44,6 @@ void app_main(void)
 
     while (1) {
         int button = gpio_get_level(BUTTON);
-        
 
         if (last_button == 1 && button == 0) {
 
@@ -66,7 +65,7 @@ void app_main(void)
                     line_follow_stop();
                     break;
             }
-            
+
             switch (mode) {
 
                 case MODE_WIFI:
