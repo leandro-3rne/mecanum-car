@@ -198,7 +198,7 @@ Weight: +2.5   +1.0    0.0   -1.0   -2.5
 The raw values are normalized using per-sensor black and white calibration values:
 
 $$
-s_i = \operatorname{clamp}\left(
+s_i = \mathrm{clamp}\left(
 \frac{w_i-r_i}{w_i-b_i},
 0,1\right)
 $$
@@ -225,7 +225,7 @@ $$
 The tracking error is converted into a rotational command by the discrete PID controller:
 
 $$
-\omega = \operatorname{clamp}\left(
+\omega = \mathrm{clamp}\left(
 K_Pe + K_I\int e\,dt + K_D\frac{de}{dt},
 -1,1\right)
 $$
